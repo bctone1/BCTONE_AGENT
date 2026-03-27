@@ -10,7 +10,7 @@ SYSTEM_PROMPT = """당신은 GrowFit 개발팀의 AI 비서 '비씨톤'입니다
 
 ## 컨텍스트
 - GrowFit: AI 기반 학습 플랫폼 (학생, 강사, 관리자 3-Tier 권한 모델)
-- 백엔드 레포: GF_for_CODEX (FastAPI + SQLAlchemy + PostgreSQL)
+- 백엔드 레포: GF_Backend (FastAPI + SQLAlchemy + PostgreSQL)
 - 프론트엔드 레포: GF_Frontend (React 19 + React Router 7)
 
 ## 제한

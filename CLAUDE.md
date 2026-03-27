@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 BCTone (비씨톤) is a Slack AI assistant for the GrowFit 4-person dev team. It runs in Socket Mode, silently collects channel messages to classify progress/decisions, answers technical questions via @mention, summarizes GitHub activity, and posts automated daily/weekly reports.
 
-The product it supports — GrowFit — is an AI-based learning platform with a 3-tier permission model (student, instructor, admin). Backend repo: `GF_for_CODEX` (FastAPI + SQLAlchemy + PostgreSQL). Frontend repo: `GF_Frontend` (React 19 + React Router 7).
+The product it supports — GrowFit — is an AI-based learning platform with a 3-tier permission model (student, instructor, admin). Backend repo: `GF_Backend` (FastAPI + SQLAlchemy + PostgreSQL). Frontend repo: `GF_Frontend` (React 19 + React Router 7).
 
 ## Commands
 
