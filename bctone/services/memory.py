@@ -9,6 +9,8 @@ def save_memory(
     content: str,
     summary: str | None = None,
     expiry_days: int | None = None,
+    assignee: str | None = None,
+    due_date: str | None = None,
 ):
     expires_at = None
     if expiry_days is not None:
@@ -20,10 +22,10 @@ def save_memory(
             cur.execute(
                 """
                 INSERT INTO bctone.memories
-                    (category, source_user, source_channel, content, summary, expires_at)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                    (category, source_user, source_channel, content, summary, expires_at, assignee, due_date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (category, source_user, source_channel, content, summary, expires_at),
+                (category, source_user, source_channel, content, summary, expires_at, assignee, due_date),
             )
         conn.commit()
     finally:
@@ -135,6 +137,61 @@ def get_conversation_history(
         }
         for r in rows
     ]
+
+
+def get_todos(status: str = "open") -> list[dict]:
+    """Get TODO items by status."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, source_user, content, summary, assignee, status, due_date, created_at
+                FROM bctone.memories
+                WHERE category = 'todo' AND status = %s
+                  AND (expires_at IS NULL OR expires_at > NOW())
+                ORDER BY due_date ASC NULLS LAST, created_at DESC
+                """,
+                (status,),
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    return [
+        {
+            "id": r[0],
+            "source_user": r[1],
+            "content": r[2],
+            "summary": r[3],
+            "assignee": r[4],
+            "status": r[5],
+            "due_date": r[6],
+            "created_at": r[7],
+        }
+        for r in rows
+    ]
+
+
+def complete_todo(todo_id: int) -> bool:
+    """Mark a TODO as done and set expiry to 7 days from now."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE bctone.memories
+                SET status = 'done',
+                    expires_at = %s
+                WHERE id = %s AND category = 'todo'
+                """,
+                (datetime.now(timezone.utc) + timedelta(days=7), todo_id),
+            )
+            updated = cur.rowcount > 0
+        conn.commit()
+    finally:
+        conn.close()
+    return updated
 
 
 def cleanup_expired() -> int:

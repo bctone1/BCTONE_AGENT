@@ -1,5 +1,8 @@
+import json
+from datetime import datetime, timezone
+
 import anthropic
-from bctone.prompts.system import SYSTEM_PROMPT, CLASSIFY_PROMPT, ESCALATION_PROMPT
+from bctone.prompts.system import SYSTEM_PROMPT, CLASSIFY_PROMPT, ESCALATION_PROMPT, TODO_PARSE_PROMPT
 
 MODEL_SONNET = "claude-sonnet-4-20250514"
 MODEL_OPUS = "claude-opus-4-20250514"
@@ -23,7 +26,7 @@ def classify_message(message: str) -> str:
         messages=[{"role": "user", "content": CLASSIFY_PROMPT.format(message=message)}],
     )
     result = response.content[0].text.strip().upper()
-    if result not in ("PROGRESS", "DECISION", "NONE"):
+    if result not in ("PROGRESS", "DECISION", "TODO", "NONE"):
         return "NONE"
     return result
 
@@ -57,6 +60,21 @@ def chat(user_message: str, conversation_history: list[dict]) -> str:
         messages=messages,
     )
     return response.content[0].text
+
+
+def parse_todo(message: str) -> dict:
+    """Extract TODO info (content, assignee, due_date) from a message."""
+    client = get_client()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    response = client.messages.create(
+        model=MODEL_SONNET,
+        max_tokens=256,
+        messages=[{"role": "user", "content": TODO_PARSE_PROMPT.format(message=message, today=today)}],
+    )
+    try:
+        return json.loads(response.content[0].text.strip())
+    except json.JSONDecodeError:
+        return {"content": message, "assignee": None, "due_date": None}
 
 
 def summarize(text: str, instruction: str) -> str:

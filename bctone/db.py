@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS bctone.memories (
     source_channel VARCHAR(50) NOT NULL,
     content        TEXT NOT NULL,
     summary        TEXT,
+    assignee       VARCHAR(50),
+    status         VARCHAR(10) DEFAULT 'open',
+    due_date       DATE,
     created_at     TIMESTAMPTZ DEFAULT NOW(),
     expires_at     TIMESTAMPTZ
 );
@@ -36,6 +39,7 @@ CREATE TABLE IF NOT EXISTS bctone.reports (
 
 CREATE INDEX IF NOT EXISTS idx_memories_category ON bctone.memories (category);
 CREATE INDEX IF NOT EXISTS idx_memories_created ON bctone.memories (created_at);
+CREATE INDEX IF NOT EXISTS idx_memories_todo_status ON bctone.memories (status) WHERE category = 'todo';
 CREATE INDEX IF NOT EXISTS idx_conversations_channel ON bctone.conversations (channel_id, thread_ts);
 """
 

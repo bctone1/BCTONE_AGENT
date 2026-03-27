@@ -13,6 +13,8 @@ class Settings:
         self.github_token = os.getenv("GITHUB_TOKEN", "")
         self.github_repo_backend = os.getenv("GITHUB_REPO_BACKEND", "")
         self.github_repo_frontend = os.getenv("GITHUB_REPO_FRONTEND", "")
+        self.github_repo_planning = os.getenv("GITHUB_REPO_PLANNING", "")
+        self.github_default_branch = os.getenv("GITHUB_DEFAULT_BRANCH", "main")
         self.bctone_db_url = os.getenv("BCTONE_DB_URL", "")
         self.bot_log_channel_id = os.getenv("BOT_LOG_CHANNEL_ID", "")
         self.daily_report_hour = int(os.getenv("DAILY_REPORT_HOUR", "9"))

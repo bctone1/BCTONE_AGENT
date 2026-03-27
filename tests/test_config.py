@@ -24,8 +24,13 @@ def test_settings_loads_from_env(monkeypatch):
 
 
 def test_settings_raises_on_missing_required(monkeypatch):
+    monkeypatch.setattr("bctone.config.load_dotenv", lambda: None)
     monkeypatch.delenv("SLACK_APP_TOKEN", raising=False)
     monkeypatch.delenv("SLACK_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("BCTONE_DB_URL", raising=False)
+    monkeypatch.delenv("BOT_LOG_CHANNEL_ID", raising=False)
 
     with pytest.raises(ValueError, match="Missing required"):
         Settings()

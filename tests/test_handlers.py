@@ -125,6 +125,66 @@ def test_handle_command_github():
     respond.assert_called_once()
 
 
+def test_handle_message_saves_todo():
+    event = _make_event("온보딩 플로우 와이어프레임 금요일까지 완성해야 함")
+
+    with patch("bctone.handlers.message.classify_message", return_value="TODO"):
+        with patch("bctone.handlers.message.parse_todo", return_value={
+            "content": "온보딩 플로우 와이어프레임 완성",
+            "assignee": None,
+            "due_date": "2026-03-31",
+        }):
+            with patch("bctone.handlers.message.save_memory") as mock_save:
+                from bctone.handlers.message import handle_message
+                handle_message(event)
+
+    call_kwargs = mock_save.call_args[1]
+    assert call_kwargs["category"] == "todo"
+    assert call_kwargs["due_date"] == "2026-03-31"
+    assert call_kwargs["assignee"] == "U123"  # defaults to message sender
+
+
+def test_handle_message_completes_todo():
+    event = _make_event("완료 #5")
+
+    with patch("bctone.handlers.message.complete_todo") as mock_complete:
+        from bctone.handlers.message import handle_message
+        handle_message(event)
+
+    mock_complete.assert_called_once_with(5)
+
+
+def test_handle_command_todo_list():
+    ack = MagicMock()
+    respond = MagicMock()
+    command = {"text": "todo", "user_id": "U123", "channel_id": "C456"}
+
+    with patch("bctone.handlers.command.get_todos", return_value=[]):
+        from bctone.handlers.command import handle_command
+        handle_command(ack, respond, command)
+
+    ack.assert_called_once()
+    respond.assert_called_once()
+    response_text = respond.call_args[1].get("text") or (respond.call_args[0][0] if respond.call_args[0] else "")
+    assert "미완료" in response_text
+
+
+def test_handle_command_todo_complete():
+    ack = MagicMock()
+    respond = MagicMock()
+    command = {"text": "todo 완료 #3", "user_id": "U123", "channel_id": "C456"}
+
+    with patch("bctone.handlers.command.complete_todo", return_value=True):
+        from bctone.handlers.command import handle_command
+        handle_command(ack, respond, command)
+
+    ack.assert_called_once()
+    respond.assert_called_once()
+    response_text = respond.call_args[1].get("text") or (respond.call_args[0][0] if respond.call_args[0] else "")
+    assert "#3" in response_text
+    assert "완료" in response_text
+
+
 def test_handle_command_help():
     ack = MagicMock()
     respond = MagicMock()

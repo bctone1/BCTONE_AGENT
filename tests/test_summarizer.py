@@ -35,10 +35,11 @@ def test_summarize_team_progress():
 
 
 def test_generate_daily_report():
-    with patch("bctone.services.summarizer.summarize_github", side_effect=["백엔드 요약", "프론트 요약"]):
+    with patch("bctone.services.summarizer.summarize_github", side_effect=["백엔드 요약", "프론트 요약", "기획 요약"]):
         with patch("bctone.services.summarizer.summarize_team_progress", return_value="팀 진행 요약"):
-            with patch("bctone.services.summarizer.llm_summarize", return_value="일일 리포트 전체 요약"):
-                from bctone.services.summarizer import generate_daily_report
-                result = generate_daily_report()
+            with patch("bctone.services.summarizer.get_todos", return_value=[]):
+                with patch("bctone.services.summarizer.llm_summarize", return_value="일일 리포트 전체 요약"):
+                    from bctone.services.summarizer import generate_daily_report
+                    result = generate_daily_report()
 
     assert "일일 리포트" in result
