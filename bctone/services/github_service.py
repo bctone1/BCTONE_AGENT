@@ -40,7 +40,9 @@ def get_recent_prs(repo_key: str, state: str = "all", limit: int = 10) -> list[d
     prs = repo.get_pulls(state=state, sort="updated", direction="desc", base=branch)
 
     results = []
-    for pr in prs[:limit]:
+    for i, pr in enumerate(prs):
+        if i >= limit:
+            break
         results.append({
             "number": pr.number,
             "title": pr.title,
@@ -61,7 +63,9 @@ def get_recent_commits(repo_key: str, days: int = 1, limit: int = 20) -> list[di
     commits = repo.get_commits(sha=branch, since=since)
 
     results = []
-    for c in commits[:limit]:
+    for i, c in enumerate(commits):
+        if i >= limit:
+            break
         results.append({
             "sha": c.sha[:7],
             "message": c.commit.message,
