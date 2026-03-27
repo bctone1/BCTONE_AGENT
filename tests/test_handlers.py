@@ -1,0 +1,139 @@
+import pytest
+from unittest.mock import patch, MagicMock
+
+
+def _make_event(text, user="U123", channel="C456", ts="1234567890.123", thread_ts=None):
+    event = {
+        "text": text,
+        "user": user,
+        "channel": channel,
+        "ts": ts,
+    }
+    if thread_ts:
+        event["thread_ts"] = thread_ts
+    return event
+
+
+def _make_say():
+    return MagicMock()
+
+
+def test_handle_mention_calls_chat():
+    event = _make_event("<@BOT_ID> 프론트 진행상황 알려줘")
+    say = _make_say()
+
+    with patch("bctone.handlers.mention.chat", return_value="프론트 PR 2개 머지됐습니다.") as mock_chat:
+        with patch("bctone.handlers.mention.get_conversation_history", return_value=[]):
+            with patch("bctone.handlers.mention.save_conversation"):
+                from bctone.handlers.mention import handle_mention
+                handle_mention(event, say)
+
+    mock_chat.assert_called_once()
+    say.assert_called_once()
+    assert "프론트" in say.call_args[1].get("text", say.call_args[0][0] if say.call_args[0] else "")
+
+
+def test_handle_mention_saves_conversation():
+    event = _make_event("<@BOT_ID> 안녕하세요")
+    say = _make_say()
+
+    with patch("bctone.handlers.mention.chat", return_value="안녕하세요, 무엇을 도와드릴까요?"):
+        with patch("bctone.handlers.mention.get_conversation_history", return_value=[]):
+            with patch("bctone.handlers.mention.save_conversation") as mock_save:
+                from bctone.handlers.mention import handle_mention
+                handle_mention(event, say)
+
+    assert mock_save.call_count == 2  # user message + assistant response
+
+
+def test_handle_message_saves_progress():
+    event = _make_event("로그인 API 구현 완료했습니다")
+
+    with patch("bctone.handlers.message.classify_message", return_value="PROGRESS"):
+        with patch("bctone.handlers.message.save_memory") as mock_save:
+            with patch("bctone.handlers.message.llm_summarize", return_value="로그인 API 완료"):
+                from bctone.handlers.message import handle_message
+                handle_message(event)
+
+    mock_save.assert_called_once()
+    call_kwargs = mock_save.call_args[1]
+    assert call_kwargs["category"] == "progress"
+    assert call_kwargs["expiry_days"] == 14
+
+
+def test_handle_message_saves_decision():
+    event = _make_event("JWT 인증 방식으로 확정합니다")
+
+    with patch("bctone.handlers.message.classify_message", return_value="DECISION"):
+        with patch("bctone.handlers.message.save_memory") as mock_save:
+            with patch("bctone.handlers.message.llm_summarize", return_value="JWT 인증 확정"):
+                from bctone.handlers.message import handle_message
+                handle_message(event)
+
+    call_kwargs = mock_save.call_args[1]
+    assert call_kwargs["category"] == "decision"
+    assert call_kwargs.get("expiry_days") is None  # decisions don't expire
+
+
+def test_handle_message_ignores_none():
+    event = _make_event("점심 뭐 먹을까요?")
+
+    with patch("bctone.handlers.message.classify_message", return_value="NONE"):
+        with patch("bctone.handlers.message.save_memory") as mock_save:
+            from bctone.handlers.message import handle_message
+            handle_message(event)
+
+    mock_save.assert_not_called()
+
+
+def test_handle_message_ignores_bot():
+    event = _make_event("봇이 보낸 메시지")
+    event["bot_id"] = "B123"
+
+    with patch("bctone.handlers.message.classify_message") as mock_classify:
+        from bctone.handlers.message import handle_message
+        handle_message(event)
+
+    mock_classify.assert_not_called()
+
+
+def test_handle_command_summary():
+    ack = MagicMock()
+    respond = MagicMock()
+    command = {"text": "요약", "user_id": "U123", "channel_id": "C456"}
+
+    with patch("bctone.handlers.command.summarize_team_progress", return_value="팀 진행 요약 내용"):
+        from bctone.handlers.command import handle_command
+        handle_command(ack, respond, command)
+
+    ack.assert_called_once()
+    respond.assert_called_once()
+    call_text = respond.call_args[1].get("text") or (respond.call_args[0][0] if respond.call_args[0] else "")
+    assert "팀 진행 요약" in call_text
+
+
+def test_handle_command_github():
+    ack = MagicMock()
+    respond = MagicMock()
+    command = {"text": "github backend", "user_id": "U123", "channel_id": "C456"}
+
+    with patch("bctone.handlers.command.summarize_github", return_value="백엔드 GitHub 요약"):
+        from bctone.handlers.command import handle_command
+        handle_command(ack, respond, command)
+
+    ack.assert_called_once()
+    respond.assert_called_once()
+
+
+def test_handle_command_help():
+    ack = MagicMock()
+    respond = MagicMock()
+    command = {"text": "", "user_id": "U123", "channel_id": "C456"}
+
+    from bctone.handlers.command import handle_command
+    handle_command(ack, respond, command)
+
+    ack.assert_called_once()
+    respond.assert_called_once()
+    response_text = respond.call_args[1].get("text") or (respond.call_args[0][0] if respond.call_args[0] else "")
+    assert "사용 가능한 명령" in response_text
