@@ -49,7 +49,7 @@ def start_scheduler(app: App):
     settings = get_settings()
     scheduler = BackgroundScheduler(timezone="Asia/Seoul")
 
-    # Daily report: weekdays at configured hour (default 9 AM KST)
+    # Daily report: weekdays at configured hour (default 18:00 KST)
     scheduler.add_job(
         post_daily_report,
         "cron",
@@ -59,13 +59,12 @@ def start_scheduler(app: App):
         id="daily_report",
     )
 
-    # Weekly report: Monday at configured hour
+    # Weekly report: Friday at configured hour (default 18:00 KST)
     scheduler.add_job(
         post_weekly_report,
         "cron",
-        day_of_week="mon",
-        hour=settings.daily_report_hour,
-        minute=30,
+        day_of_week="fri",
+        hour=settings.weekly_report_hour,
         args=[app.client, settings.bot_log_channel_id],
         id="weekly_report",
     )

@@ -4,6 +4,7 @@ from bctone.config import Settings
 
 
 def test_settings_loads_from_env(monkeypatch):
+    monkeypatch.setattr("bctone.config.load_dotenv", lambda: None)
     monkeypatch.setenv("SLACK_APP_TOKEN", "xapp-test")
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
     monkeypatch.setenv("SLACK_SIGNING_SECRET", "test-secret")
@@ -13,13 +14,16 @@ def test_settings_loads_from_env(monkeypatch):
     monkeypatch.setenv("GITHUB_REPO_FRONTEND", "owner/frontend")
     monkeypatch.setenv("BCTONE_DB_URL", "postgresql://localhost/bctone")
     monkeypatch.setenv("BOT_LOG_CHANNEL_ID", "C123")
+    monkeypatch.setenv("DAILY_REPORT_HOUR", "18")
+    monkeypatch.setenv("WEEKLY_REPORT_HOUR", "18")
 
     settings = Settings()
 
     assert settings.slack_app_token == "xapp-test"
     assert settings.slack_bot_token == "xoxb-test"
     assert settings.anthropic_api_key == "sk-ant-test"
-    assert settings.daily_report_hour == 9
+    assert settings.daily_report_hour == 18
+    assert settings.weekly_report_hour == 18
     assert settings.memory_expiry_days == 14
 
 
