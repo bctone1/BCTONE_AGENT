@@ -19,10 +19,10 @@ def _make_say():
 
 
 def test_handle_mention_calls_chat():
-    event = _make_event("<@BOT_ID> 프론트 진행상황 알려줘")
+    event = _make_event("<@BOT_ID> FastAPI에서 의존성 주입 어떻게 해?")
     say = _make_say()
 
-    with patch("bctone.handlers.mention.chat", return_value="프론트 PR 2개 머지됐습니다.") as mock_chat:
+    with patch("bctone.handlers.mention.chat", return_value="FastAPI의 Depends를 사용하시면 됩니다.") as mock_chat:
         with patch("bctone.handlers.mention.get_conversation_history", return_value=[]):
             with patch("bctone.handlers.mention.save_conversation"):
                 from bctone.handlers.mention import handle_mention
@@ -30,7 +30,48 @@ def test_handle_mention_calls_chat():
 
     mock_chat.assert_called_once()
     say.assert_called_once()
-    assert "프론트" in say.call_args[1].get("text", say.call_args[0][0] if say.call_args[0] else "")
+    assert "Depends" in say.call_args[1].get("text", say.call_args[0][0] if say.call_args[0] else "")
+
+
+def test_handle_mention_github_all():
+    event = _make_event("<@BOT_ID> 깃허브 변경사항 알려줘")
+    say = _make_say()
+
+    with patch("bctone.handlers.mention.summarize_github", return_value="요약 결과") as mock_gh:
+        with patch("bctone.handlers.mention.save_conversation"):
+            from bctone.handlers.mention import handle_mention
+            handle_mention(event, say)
+
+    assert mock_gh.call_count == 3  # backend, frontend, planning
+    say.assert_called_once()
+    assert "백엔드" in say.call_args.kwargs["text"]
+
+
+def test_handle_mention_github_backend():
+    event = _make_event("<@BOT_ID> 백엔드 깃허브 커밋 알려줘")
+    say = _make_say()
+
+    with patch("bctone.handlers.mention.summarize_github", return_value="백엔드 요약") as mock_gh:
+        with patch("bctone.handlers.mention.save_conversation"):
+            from bctone.handlers.mention import handle_mention
+            handle_mention(event, say)
+
+    mock_gh.assert_called_once_with("backend")
+    say.assert_called_once()
+
+
+def test_handle_mention_team_summary():
+    event = _make_event("<@BOT_ID> 팀 진행상황 요약해줘")
+    say = _make_say()
+
+    with patch("bctone.handlers.mention.summarize_team_progress", return_value="팀 요약 결과") as mock_summary:
+        with patch("bctone.handlers.mention.save_conversation"):
+            from bctone.handlers.mention import handle_mention
+            handle_mention(event, say)
+
+    mock_summary.assert_called_once()
+    say.assert_called_once()
+    assert "팀 요약" in say.call_args.kwargs["text"]
 
 
 def test_handle_mention_saves_conversation():
